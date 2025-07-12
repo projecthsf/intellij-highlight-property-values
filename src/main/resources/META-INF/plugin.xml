@@ -1,0 +1,55 @@
+<!-- Copyright 2000-2023 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license. -->
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+
+<idea-plugin>
+
+  <!-- Unique id for this plugin. Must stay constant for the life of the plugin. -->
+  <id>io.github.projecthsf.property.highlight</id>
+
+  <!-- Text to display as name on Settings | Plugin page -->
+  <name>Highlight Duplicate Values</name>
+
+  <version>1.0.0</version>
+  <vendor email="w2ajax@gmail.com" url="https://github.com/projecthsf/intellij-highlight-property-values">Jin Nguyen</vendor>
+
+  <depends>com.intellij.modules.platform</depends>
+  <depends>com.intellij.java</depends>
+
+  <description>
+    <![CDATA[
+      Support highlight duplicate property values with some setting options:
+      <ul>
+       <li>Scope: Whole project (default) or Current class</li>
+       <li>Highlight level: Error or Warning (default)</li>
+       <li>Setting &gt; Tools &gt; Duplicate Property Values</li>
+      </ul>
+      <p>
+            <img src="https://raw.githubusercontent.com/projecthsf/intellij-highlight-property-values/refs/heads/main/docs/screenshot/highlight-1.png"
+                 border="0" width="500"  alt="highlight-duplicate-property-values-project-view"/></p>
+      <p>
+      <p>
+            <img src="https://raw.githubusercontent.com/projecthsf/intellij-highlight-property-values/refs/heads/main/docs/screenshot/highlight-2.png"
+                 border="0" width="500"  alt="highlight-duplicate-property-values-editor-view"/></p>
+      <p>
+      <p>
+            <img src="https://raw.githubusercontent.com/projecthsf/intellij-highlight-property-values/refs/heads/main/docs/screenshot/highlight-3.png"
+                 border="0" width="500"  alt="highlight-duplicate-property-values-config-view"/></p>
+      <p>
+    ]]>
+  </description>
+  <change-notes>
+    <![CDATA[
+      <ul>
+        <li><b>1.0.0</b> First launch</li>
+      </ul>
+    ]]>
+  </change-notes>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <annotator language="JAVA" implementationClass="io.github.projecthsf.property.highlight.annotator.CheckDuplicateValues"/>
+    <applicationConfigurable parentId="tools" instance="io.github.projecthsf.property.highlight.settings.AppSettingsConfigurable"
+                             id="io.github.projecthsf.property.highlight.settings.AppSettingsConfigurable" displayName="Duplicate Property Values" />
+    <applicationService serviceImplementation="io.github.projecthsf.property.highlight.settings.AppSettings"/>
+  </extensions>
+
+</idea-plugin>
