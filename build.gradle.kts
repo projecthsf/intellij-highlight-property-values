@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "io.github.projecthsf.property.highlight"
-version = "1.0.0"
+version = "1.0.1"
 
 repositories {
   mavenCentral()
@@ -31,7 +31,7 @@ intellijPlatform {
 
   pluginConfiguration {
     ideaVersion {
-      sinceBuild = "231"
+      sinceBuild = "241"
     }
   }
   pluginVerification  {
