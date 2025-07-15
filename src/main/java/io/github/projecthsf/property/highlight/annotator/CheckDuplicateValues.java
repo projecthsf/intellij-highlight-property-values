@@ -31,6 +31,10 @@ public class CheckDuplicateValues implements Annotator {
             return;
         }
 
+        if (literalExpression.getValue() instanceof Boolean) {
+            return;
+        }
+
         if (!(literalExpression.getParent() instanceof PsiField)) {
             return;
         }
