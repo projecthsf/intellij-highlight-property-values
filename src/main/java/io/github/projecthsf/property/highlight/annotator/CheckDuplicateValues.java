@@ -11,7 +11,6 @@ import io.github.projecthsf.property.highlight.enums.HighlightScopeEnum;
 import io.github.projecthsf.property.highlight.settings.AppSettings;
 import org.jetbrains.annotations.NotNull;
 
-import java.sql.Ref;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -134,7 +133,7 @@ public class CheckDuplicateValues implements Annotator {
             if (key == null) {
                 return;
             }
-            
+
             AppSettings.State state = AppSettings.getInstance().getState();
             if (state == null || state.highlightScope == HighlightScopeEnum.PROJECT) {
                 if (!projectValueMap.containsKey(fileName)) {
@@ -155,7 +154,7 @@ public class CheckDuplicateValues implements Annotator {
             if (isResetValue) {
                 return;
             }
-            
+
             AppSettings.State state = AppSettings.getInstance().getState();
             if (state == null || state.highlightScope == HighlightScopeEnum.PROJECT) {
                 projectValueMap.remove(fileName);
