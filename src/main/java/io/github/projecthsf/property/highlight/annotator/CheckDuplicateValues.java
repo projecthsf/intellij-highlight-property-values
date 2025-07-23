@@ -19,6 +19,8 @@ public class CheckDuplicateValues implements Annotator {
 
     @Override
     public void annotate(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
+        String firstMatch = getFirstMatchReference(element);
+        storage.resetValue(firstMatch);
         AppSettings.State state = AppSettings.getInstance().getState();
         if (state == null || !state.checkDuplicateValueStatus) {
             return;
@@ -39,7 +41,7 @@ public class CheckDuplicateValues implements Annotator {
             return;
         }
 
-        String firstMatch = getFirstMatchReference(element);
+
         String value = literalExpression.getValue() instanceof String ? (String) literalExpression.getValue() : null;
         if (storage.containsKey(value)) {
             if (firstMatch.equals(storage.getValue(value))) {
@@ -63,6 +65,10 @@ public class CheckDuplicateValues implements Annotator {
     static class Storage {
         private static final Map<String, String> projectValueMap = new HashMap<>();
         private final Map<String, String> classValueMap = new HashMap<>();
+        private boolean isResetValue = false;
+
+        //fix currency issue
+        private static Boolean resetValueInProgress = false;
 
         static Storage getInstance() {
             return new Storage();
@@ -94,6 +100,27 @@ public class CheckDuplicateValues implements Annotator {
             }
 
             classValueMap.put(key, value);
+        }
+
+        void resetValue(String refValue) {
+            if (isResetValue || resetValueInProgress) {
+                return;
+            }
+
+            resetValueInProgress = true;
+            AppSettings.State state = AppSettings.getInstance().getState();
+            if (state == null || state.highlightScope == HighlightScopeEnum.PROJECT) {
+                String fileName = refValue.split(":")[0];
+                for (String key: projectValueMap.keySet()) {
+                    String value = projectValueMap.get(key).split(":")[0];
+                    if (fileName.equals(value)) {
+                        projectValueMap.remove(key);
+                    }
+
+                }
+                isResetValue = true;
+                resetValueInProgress = false;
+            }
         }
     }
 }
