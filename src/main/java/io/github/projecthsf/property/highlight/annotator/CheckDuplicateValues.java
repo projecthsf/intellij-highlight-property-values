@@ -20,7 +20,8 @@ public class CheckDuplicateValues implements Annotator {
     @Override
     public void annotate(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
         String firstMatch = getFirstMatchReference(element);
-        storage.resetValue(firstMatch);
+        String fileName = firstMatch.split(":")[0];
+        storage.resetValue(fileName);
         AppSettings.State state = AppSettings.getInstance().getState();
         if (state == null || !state.checkDuplicateValueStatus) {
             return;
@@ -43,17 +44,20 @@ public class CheckDuplicateValues implements Annotator {
 
 
         String value = literalExpression.getValue() instanceof String ? (String) literalExpression.getValue() : null;
-        if (storage.containsKey(value)) {
-            if (firstMatch.equals(storage.getValue(value))) {
-                // ignore high light the first match
-                return;
-            }
-            holder.newAnnotation(state.highlightSeverity.getSeverity(), "Duplicate value with " + storage.getValue(value))
-                    .highlightType(ProblemHighlightType.WARNING)
-                    .create();
-        } else {
-            storage.setValue(value, firstMatch);
+        String storageValue = storage.getValue(value);
+        if (storageValue == null) {
+            storage.setValue(fileName, value, firstMatch);
+            return;
         }
+
+        if (firstMatch.equals(storageValue)) {
+            // ignore high light the first match
+            return;
+        }
+        holder.newAnnotation(state.highlightSeverity.getSeverity(), "Duplicate value with " + storageValue)
+                .highlightType(ProblemHighlightType.WARNING)
+                .create();
+
     }
 
     private String getFirstMatchReference(@NotNull PsiElement element) {
@@ -63,63 +67,71 @@ public class CheckDuplicateValues implements Annotator {
     }
 
     static class Storage {
-        private static final Map<String, String> projectValueMap = new HashMap<>();
-        private final Map<String, String> classValueMap = new HashMap<>();
+        private static final Map<String, Map<String, String>> projectValueMap = new HashMap<>();
+        private final Map<String, Map<String, String>> classValueMap = new HashMap<>();
         private boolean isResetValue = false;
-
-        //fix currency issue
-        private static Boolean resetValueInProgress = false;
 
         static Storage getInstance() {
             return new Storage();
         }
 
-        boolean containsKey(String key) {
-            AppSettings.State state = AppSettings.getInstance().getState();
-
-            if (state == null || state.highlightScope == HighlightScopeEnum.PROJECT) {
-                return projectValueMap.containsKey(key);
-            }
-
-            return classValueMap.containsKey(key);
-        }
-
         String getValue(String key) {
+            if (key == null) {
+                return null;
+            }
             AppSettings.State state = AppSettings.getInstance().getState();
             if (state == null || state.highlightScope == HighlightScopeEnum.PROJECT) {
-                return projectValueMap.get(key);
+                for (String fileName: projectValueMap.keySet()) {
+                    if (projectValueMap.get(fileName).containsKey(key)) {
+                        return projectValueMap.get(fileName).get(key);
+                    }
+
+                    return null;
+                }
+
+                return null;
             }
 
-            return classValueMap.get(key);
+            for (String fileName: classValueMap.keySet()) {
+                if (classValueMap.get(fileName).containsKey(key)) {
+                    return classValueMap.get(fileName).get(key);
+                }
+
+
+            }
+            return null;
         }
 
-        void setValue(String key, String value) {
+        void setValue(String fileName, String key, String value) {
+            if (key == null) {
+                return;
+            }
+            
             AppSettings.State state = AppSettings.getInstance().getState();
             if (state == null || state.highlightScope == HighlightScopeEnum.PROJECT) {
-                projectValueMap.put(key, value);
-            }
+                if (!projectValueMap.containsKey(fileName)) {
+                    projectValueMap.put(fileName, new HashMap<>());
+                }
+                projectValueMap.get(fileName).put(key, value);
 
-            classValueMap.put(key, value);
-        }
-
-        void resetValue(String refValue) {
-            if (isResetValue || resetValueInProgress) {
                 return;
             }
 
-            resetValueInProgress = true;
+            if (!classValueMap.containsKey(fileName)) {
+                classValueMap.put(fileName, new HashMap<>());
+            }
+            classValueMap.get(fileName).put(key, value);
+        }
+
+        void resetValue(String fileName) {
+            if (isResetValue) {
+                return;
+            }
+
             AppSettings.State state = AppSettings.getInstance().getState();
             if (state == null || state.highlightScope == HighlightScopeEnum.PROJECT) {
-                String fileName = refValue.split(":")[0];
-                for (String key: projectValueMap.keySet()) {
-                    String value = projectValueMap.get(key).split(":")[0];
-                    if (fileName.equals(value)) {
-                        projectValueMap.remove(key);
-                    }
-
-                }
+                projectValueMap.remove(fileName);
                 isResetValue = true;
-                resetValueInProgress = false;
             }
         }
     }
