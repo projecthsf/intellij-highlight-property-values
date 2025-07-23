@@ -19,6 +19,8 @@ public class CheckDuplicateValues implements Annotator {
 
     @Override
     public void annotate(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
+        RefDTO firstMatch = getFirstMatchReference(element);
+        storage.resetValue(firstMatch.getFile());
         AppSettings.State state = AppSettings.getInstance().getState();
         if (state == null || !state.checkDuplicateValueStatus) {
             return;
@@ -39,61 +41,125 @@ public class CheckDuplicateValues implements Annotator {
             return;
         }
 
-        String firstMatch = getFirstMatchReference(element);
+
         String value = literalExpression.getValue() instanceof String ? (String) literalExpression.getValue() : null;
-        if (storage.containsKey(value)) {
-            if (firstMatch.equals(storage.getValue(value))) {
-                // ignore high light the first match
-                return;
+        RefDTO storageValue = storage.getValue(value);
+        if (storageValue == null) {
+            storage.setValue(firstMatch.getFile(), value, firstMatch.getLine());
+            return;
+        }
+
+        if (firstMatch.equals(storageValue)) {
+            // ignore high light the first match
+            return;
+        }
+        holder.newAnnotation(state.highlightSeverity.getSeverity(), "Duplicate value with " + storageValue)
+                .highlightType(ProblemHighlightType.WARNING)
+                .create();
+
+    }
+
+    private RefDTO getFirstMatchReference(@NotNull PsiElement element) {
+        PsiJavaFile file = (PsiJavaFile) element.getContainingFile();
+        int line = file.getFileDocument().getLineNumber(element.getTextRange().getStartOffset()) + 1;
+
+        return new RefDTO(String.format("%s.%s", file.getPackageName(), file.getName()), line);
+    }
+
+    static class RefDTO {
+        private final String file;
+        private final int line;
+
+        public RefDTO(String file, int line) {
+            this.file = file;
+            this.line = line;
+        }
+
+        public String getFile() {
+            return file;
+        }
+
+        public int getLine() {
+            return line;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof RefDTO dto)) {
+                return false;
             }
-            holder.newAnnotation(state.highlightSeverity.getSeverity(), "Duplicate value with " + storage.getValue(value))
-                    .highlightType(ProblemHighlightType.WARNING)
-                    .create();
-        } else {
-            storage.setValue(value, firstMatch);
+            return file.equals(dto.getFile()) && line == dto.getLine();
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s:%s", file, line);
         }
     }
 
-    private String getFirstMatchReference(@NotNull PsiElement element) {
-        PsiJavaFile file = (PsiJavaFile) element.getContainingFile();
-        int line = file.getFileDocument().getLineNumber(element.getTextRange().getStartOffset()) + 1;
-        return file.getPackageName() + "." + file.getName() + ":" + line;
-    }
-
     static class Storage {
-        private static final Map<String, String> projectValueMap = new HashMap<>();
-        private final Map<String, String> classValueMap = new HashMap<>();
+        private static final Map<String, Map<String, Integer>> projectValueMap = new HashMap<>();
+        private final Map<String, Map<String, Integer>> classValueMap = new HashMap<>();
+        private boolean isResetValue = false;
 
         static Storage getInstance() {
             return new Storage();
         }
 
-        boolean containsKey(String key) {
+        RefDTO getValue(String key) {
+            if (key == null) {
+                return null;
+            }
             AppSettings.State state = AppSettings.getInstance().getState();
-
             if (state == null || state.highlightScope == HighlightScopeEnum.PROJECT) {
-                return projectValueMap.containsKey(key);
+                for (String fileName: projectValueMap.keySet()) {
+                    if (projectValueMap.get(fileName).containsKey(key)) {
+                        return new RefDTO(fileName, projectValueMap.get(fileName).get(key));
+                    }
+                }
+
+                return null;
             }
 
-            return classValueMap.containsKey(key);
+            for (String fileName: classValueMap.keySet()) {
+                if (classValueMap.get(fileName).containsKey(key)) {
+                    return new RefDTO(fileName, classValueMap.get(fileName).get(key));
+                }
+            }
+            return null;
         }
 
-        String getValue(String key) {
-            AppSettings.State state = AppSettings.getInstance().getState();
-            if (state == null || state.highlightScope == HighlightScopeEnum.PROJECT) {
-                return projectValueMap.get(key);
+        void setValue(String fileName, String key, int line) {
+            if (key == null) {
+                return;
             }
 
-            return classValueMap.get(key);
+            AppSettings.State state = AppSettings.getInstance().getState();
+            if (state == null || state.highlightScope == HighlightScopeEnum.PROJECT) {
+                if (!projectValueMap.containsKey(fileName)) {
+                    projectValueMap.put(fileName, new HashMap<>());
+                }
+                projectValueMap.get(fileName).put(key, line);
+
+                return;
+            }
+
+            if (!classValueMap.containsKey(fileName)) {
+                classValueMap.put(fileName, new HashMap<>());
+            }
+            classValueMap.get(fileName).put(key, line);
         }
 
-        void setValue(String key, String value) {
-            AppSettings.State state = AppSettings.getInstance().getState();
-            if (state == null || state.highlightScope == HighlightScopeEnum.PROJECT) {
-                projectValueMap.put(key, value);
+        void resetValue(String fileName) {
+            if (isResetValue) {
+                return;
             }
 
-            classValueMap.put(key, value);
+            AppSettings.State state = AppSettings.getInstance().getState();
+            if (state == null || state.highlightScope == HighlightScopeEnum.PROJECT) {
+                projectValueMap.remove(fileName);
+                isResetValue = true;
+            }
         }
     }
 }
