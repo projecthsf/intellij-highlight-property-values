@@ -11,6 +11,7 @@ import io.github.projecthsf.property.highlight.enums.HighlightScopeEnum;
 import io.github.projecthsf.property.highlight.settings.AppSettings;
 import org.jetbrains.annotations.NotNull;
 
+import java.sql.Ref;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,9 +20,8 @@ public class CheckDuplicateValues implements Annotator {
 
     @Override
     public void annotate(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
-        String firstMatch = getFirstMatchReference(element);
-        String fileName = firstMatch.split(":")[0];
-        storage.resetValue(fileName);
+        RefDTO firstMatch = getFirstMatchReference(element);
+        storage.resetValue(firstMatch.getFile());
         AppSettings.State state = AppSettings.getInstance().getState();
         if (state == null || !state.checkDuplicateValueStatus) {
             return;
@@ -44,9 +44,9 @@ public class CheckDuplicateValues implements Annotator {
 
 
         String value = literalExpression.getValue() instanceof String ? (String) literalExpression.getValue() : null;
-        String storageValue = storage.getValue(value);
+        RefDTO storageValue = storage.getValue(value);
         if (storageValue == null) {
-            storage.setValue(fileName, value, firstMatch);
+            storage.setValue(firstMatch.getFile(), value, firstMatch.getLine());
             return;
         }
 
@@ -60,22 +60,54 @@ public class CheckDuplicateValues implements Annotator {
 
     }
 
-    private String getFirstMatchReference(@NotNull PsiElement element) {
+    private RefDTO getFirstMatchReference(@NotNull PsiElement element) {
         PsiJavaFile file = (PsiJavaFile) element.getContainingFile();
         int line = file.getFileDocument().getLineNumber(element.getTextRange().getStartOffset()) + 1;
-        return file.getPackageName() + "." + file.getName() + ":" + line;
+
+        return new RefDTO(String.format("%s.%s", file.getPackageName(), file.getName()), line);
+    }
+
+    static class RefDTO {
+        private final String file;
+        private final int line;
+
+        public RefDTO(String file, int line) {
+            this.file = file;
+            this.line = line;
+        }
+
+        public String getFile() {
+            return file;
+        }
+
+        public int getLine() {
+            return line;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof RefDTO dto)) {
+                return false;
+            }
+            return file.equals(dto.getFile()) && line == dto.getLine();
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s:%s", file, line);
+        }
     }
 
     static class Storage {
-        private static final Map<String, Map<String, String>> projectValueMap = new HashMap<>();
-        private final Map<String, Map<String, String>> classValueMap = new HashMap<>();
+        private static final Map<String, Map<String, Integer>> projectValueMap = new HashMap<>();
+        private final Map<String, Map<String, Integer>> classValueMap = new HashMap<>();
         private boolean isResetValue = false;
 
         static Storage getInstance() {
             return new Storage();
         }
 
-        String getValue(String key) {
+        RefDTO getValue(String key) {
             if (key == null) {
                 return null;
             }
@@ -83,10 +115,8 @@ public class CheckDuplicateValues implements Annotator {
             if (state == null || state.highlightScope == HighlightScopeEnum.PROJECT) {
                 for (String fileName: projectValueMap.keySet()) {
                     if (projectValueMap.get(fileName).containsKey(key)) {
-                        return projectValueMap.get(fileName).get(key);
+                        return new RefDTO(fileName, projectValueMap.get(fileName).get(key));
                     }
-
-                    return null;
                 }
 
                 return null;
@@ -94,15 +124,13 @@ public class CheckDuplicateValues implements Annotator {
 
             for (String fileName: classValueMap.keySet()) {
                 if (classValueMap.get(fileName).containsKey(key)) {
-                    return classValueMap.get(fileName).get(key);
+                    return new RefDTO(fileName, classValueMap.get(fileName).get(key));
                 }
-
-
             }
             return null;
         }
 
-        void setValue(String fileName, String key, String value) {
+        void setValue(String fileName, String key, int line) {
             if (key == null) {
                 return;
             }
@@ -112,7 +140,7 @@ public class CheckDuplicateValues implements Annotator {
                 if (!projectValueMap.containsKey(fileName)) {
                     projectValueMap.put(fileName, new HashMap<>());
                 }
-                projectValueMap.get(fileName).put(key, value);
+                projectValueMap.get(fileName).put(key, line);
 
                 return;
             }
@@ -120,14 +148,14 @@ public class CheckDuplicateValues implements Annotator {
             if (!classValueMap.containsKey(fileName)) {
                 classValueMap.put(fileName, new HashMap<>());
             }
-            classValueMap.get(fileName).put(key, value);
+            classValueMap.get(fileName).put(key, line);
         }
 
         void resetValue(String fileName) {
             if (isResetValue) {
                 return;
             }
-
+            
             AppSettings.State state = AppSettings.getInstance().getState();
             if (state == null || state.highlightScope == HighlightScopeEnum.PROJECT) {
                 projectValueMap.remove(fileName);
