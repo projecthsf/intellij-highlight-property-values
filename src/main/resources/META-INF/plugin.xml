@@ -9,7 +9,7 @@
   <!-- Text to display as name on Settings | Plugin page -->
   <name>Highlight Duplicate Values</name>
 
-  <version>1.0.1</version>
+  <version>1.0.2</version>
   <vendor email="w2ajax@gmail.com" url="https://github.com/projecthsf/intellij-highlight-property-values">Jin Nguyen</vendor>
 
   <depends>com.intellij.modules.platform</depends>
@@ -23,23 +23,13 @@
        <li>Highlight level: Error or Warning (default)</li>
        <li>Setting &gt; Tools &gt; Duplicate Property Values</li>
       </ul>
-      <p>
-            <img src="https://raw.githubusercontent.com/projecthsf/intellij-highlight-property-values/refs/heads/main/docs/screenshot/highlight-1.png"
-                 border="0" width="500"  alt="highlight-duplicate-property-values-project-view"/></p>
-      <p>
-      <p>
-            <img src="https://raw.githubusercontent.com/projecthsf/intellij-highlight-property-values/refs/heads/main/docs/screenshot/highlight-2.png"
-                 border="0" width="500"  alt="highlight-duplicate-property-values-editor-view"/></p>
-      <p>
-      <p>
-            <img src="https://raw.githubusercontent.com/projecthsf/intellij-highlight-property-values/refs/heads/main/docs/screenshot/highlight-3.png"
-                 border="0" width="500"  alt="highlight-duplicate-property-values-config-view"/></p>
-      <p>
     ]]>
   </description>
   <change-notes>
     <![CDATA[
       <ul>
+        <li><b>1.0.2</b> Fix highlight not update when the file is updated </li>
+        <li><b>1.0.1</b> Fix compatibility </li>
         <li><b>1.0.0</b> First launch</li>
       </ul>
     ]]>
