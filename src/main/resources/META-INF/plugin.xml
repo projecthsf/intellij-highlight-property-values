@@ -28,6 +28,11 @@
   <change-notes>
     <![CDATA[
       <ul>
+        <li><b>1.1.0 (In-Progress)</b>
+          <ul>
+            <li>Add function go to duplicate value</li>
+          </ul>
+        </li>
         <li><b>1.0.2</b> Fix highlight not update when the file is updated </li>
         <li><b>1.0.1</b> Fix compatibility </li>
         <li><b>1.0.0</b> First launch</li>
