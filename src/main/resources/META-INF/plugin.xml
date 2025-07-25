@@ -19,6 +19,7 @@
     <![CDATA[
       Support highlight duplicate property values with some setting options:
       <ul>
+       <li>Add function go to duplicate value</li>
        <li>Scope: Whole project (default) or Current class</li>
        <li>Highlight level: Error or Warning (default)</li>
        <li>Setting &gt; Tools &gt; Duplicate Property Values</li>
