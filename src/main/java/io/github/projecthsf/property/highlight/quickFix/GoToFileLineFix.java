@@ -23,7 +23,7 @@ public class GoToFileLineFix implements ModCommandAction {
 
     @Override
     public @Nullable Presentation getPresentation(@NotNull ActionContext actionContext) {
-        return Presentation.of(this.getFamilyName());
+        return Presentation.of(getFamilyName());
     }
 
     @Override
