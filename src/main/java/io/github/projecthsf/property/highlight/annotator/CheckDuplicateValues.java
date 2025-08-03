@@ -8,6 +8,7 @@ import com.intellij.psi.PsiField;
 import com.intellij.psi.PsiJavaFile;
 import com.intellij.psi.PsiLiteralExpression;
 import io.github.projecthsf.property.highlight.enums.HighlightScopeEnum;
+import io.github.projecthsf.property.highlight.quickFix.GoToFileLineFix;
 import io.github.projecthsf.property.highlight.settings.AppSettings;
 import org.jetbrains.annotations.NotNull;
 
@@ -20,7 +21,7 @@ public class CheckDuplicateValues implements Annotator {
     @Override
     public void annotate(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
         RefDTO firstMatch = getFirstMatchReference(element);
-        storage.resetValue(firstMatch.getFile());
+        storage.resetValue(firstMatch.getClassName());
         AppSettings.State state = AppSettings.getInstance().getState();
         if (state == null || !state.checkDuplicateValueStatus) {
             return;
@@ -45,7 +46,7 @@ public class CheckDuplicateValues implements Annotator {
         String value = literalExpression.getValue() instanceof String ? (String) literalExpression.getValue() : null;
         RefDTO storageValue = storage.getValue(value);
         if (storageValue == null) {
-            storage.setValue(firstMatch.getFile(), value, firstMatch.getLine());
+            storage.setValue(firstMatch.getClassName(), value, firstMatch.getLine());
             return;
         }
 
@@ -54,6 +55,7 @@ public class CheckDuplicateValues implements Annotator {
             return;
         }
         holder.newAnnotation(state.highlightSeverity.getSeverity(), "Duplicate value with " + storageValue)
+                .withFix(new GoToFileLineFix(storageValue.getClassName(), storageValue.getLine()))
                 .highlightType(ProblemHighlightType.WARNING)
                 .create();
 
@@ -63,20 +65,20 @@ public class CheckDuplicateValues implements Annotator {
         PsiJavaFile file = (PsiJavaFile) element.getContainingFile();
         int line = file.getFileDocument().getLineNumber(element.getTextRange().getStartOffset()) + 1;
 
-        return new RefDTO(String.format("%s.%s", file.getPackageName(), file.getName()), line);
+        return new RefDTO(String.format("%s.%s", file.getPackageName(), file.getName().split("\\.")[0]), line);
     }
 
     static class RefDTO {
-        private final String file;
+        private final String className;
         private final int line;
 
-        public RefDTO(String file, int line) {
-            this.file = file;
+        public RefDTO(String className, int line) {
+            this.className = className;
             this.line = line;
         }
 
-        public String getFile() {
-            return file;
+        public String getClassName() {
+            return className;
         }
 
         public int getLine() {
@@ -88,12 +90,12 @@ public class CheckDuplicateValues implements Annotator {
             if (!(obj instanceof RefDTO dto)) {
                 return false;
             }
-            return file.equals(dto.getFile()) && line == dto.getLine();
+            return className.equals(dto.getClassName()) && line == dto.getLine();
         }
 
         @Override
         public String toString() {
-            return String.format("%s:%s", file, line);
+            return String.format("%s:%s", className, line);
         }
     }
 
