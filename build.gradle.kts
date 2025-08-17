@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "io.github.projecthsf.property.highlight"
-version = "1.0.2"
+version = "1.1.0"
 
 repositories {
   mavenCentral()
@@ -22,7 +22,7 @@ dependencies {
     //phpstorm("2024.2.6")
     //datagrip("2025.1.3")
     //bundledPlugin("com.intellij.database")
-    bundledPlugin("com.intellij.java")
+    //bundledPlugin("com.intellij.java")
   }
 }
 
@@ -40,5 +40,3 @@ intellijPlatform {
     }
   }
 }
-
-
