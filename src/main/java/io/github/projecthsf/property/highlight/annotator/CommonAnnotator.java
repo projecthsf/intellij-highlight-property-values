@@ -18,12 +18,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CheckDuplicateValues implements Annotator {
+public class CommonAnnotator implements Annotator {
     private final AppSettings.State state = AppSettings.getInstance().getState();
     private final Storage storage;
     private boolean isResetValue = false;
 
-    public CheckDuplicateValues() {
+    public CommonAnnotator() {
         storage = Storage.getInstance(state == null ? HighlightScopeEnum.PROJECT : state.highlightScope);
     }
 
