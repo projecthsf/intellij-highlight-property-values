@@ -34,21 +34,13 @@ public abstract class CommonAnnotator implements Annotator {
             isResetValue = true;
         }
 
-        if (!(element instanceof PsiLiteralValue literalExpression)) {
+
+
+        String value = getLiteralValue(element);
+        if (value == null) {
             return;
         }
-
-        if (literalExpression.getValue() == null) {
-            return;
-        }
-
-        if (literalExpression.getValue() instanceof Boolean) {
-            return;
-        }
-
         RefDTO firstMatch = getFirstMatchReference(element);
-
-        String value = literalExpression.getValue() instanceof String ? (String) literalExpression.getValue() : null;
         RefDTO storageValue = storage.getValue(value);
         if (storageValue == null) {
             storage.setValue(value, firstMatch);
