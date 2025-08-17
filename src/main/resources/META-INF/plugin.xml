@@ -9,11 +9,10 @@
   <!-- Text to display as name on Settings | Plugin page -->
   <name>Highlight Duplicate Values</name>
 
-  <version>1.0.2</version>
+  <version>1.1.0</version>
   <vendor email="w2ajax@gmail.com" url="https://github.com/projecthsf/intellij-highlight-property-values">Jin Nguyen</vendor>
 
   <depends>com.intellij.modules.platform</depends>
-  <depends>com.intellij.java</depends>
 
   <description>
     <![CDATA[
@@ -30,6 +29,7 @@
       <ul>
         <li><b>1.1.0 (In-Progress)</b>
           <ul>
+            <li>Remove depend on java language to support multi products</li>
             <li>Add function go to duplicate value</li>
           </ul>
         </li>

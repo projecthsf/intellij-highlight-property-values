@@ -3,30 +3,41 @@ package io.github.projecthsf.property.highlight.annotator;
 import com.intellij.codeInspection.ProblemHighlightType;
 import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
+import com.intellij.openapi.roots.ProjectFileIndex;
+import com.intellij.openapi.vfs.VfsUtilCore;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiField;
-import com.intellij.psi.PsiJavaFile;
-import com.intellij.psi.PsiLiteralExpression;
+import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiLiteralValue;
 import io.github.projecthsf.property.highlight.enums.HighlightScopeEnum;
 import io.github.projecthsf.property.highlight.quickFix.GoToFileLineFix;
 import io.github.projecthsf.property.highlight.settings.AppSettings;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class CheckDuplicateValues implements Annotator {
-    private final Storage storage = Storage.getInstance();
+    private final AppSettings.State state = AppSettings.getInstance().getState();
+    private final Storage storage;
+    private boolean isResetValue = false;
+
+    public CheckDuplicateValues() {
+        storage = Storage.getInstance(state == null ? HighlightScopeEnum.PROJECT : state.highlightScope);
+    }
 
     @Override
     public void annotate(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
-        RefDTO firstMatch = getFirstMatchReference(element);
-        storage.resetValue(firstMatch.getClassName());
-        AppSettings.State state = AppSettings.getInstance().getState();
         if (state == null || !state.checkDuplicateValueStatus) {
             return;
         }
-        if (!(element instanceof PsiLiteralExpression literalExpression)) {
+        if (!isResetValue) {
+            storage.resetValue(element);
+            isResetValue = true;
+        }
+
+        if (!(element instanceof PsiLiteralValue literalExpression)) {
             return;
         }
 
@@ -38,15 +49,12 @@ public class CheckDuplicateValues implements Annotator {
             return;
         }
 
-        if (!(literalExpression.getParent() instanceof PsiField)) {
-            return;
-        }
-
+        RefDTO firstMatch = getFirstMatchReference(element);
 
         String value = literalExpression.getValue() instanceof String ? (String) literalExpression.getValue() : null;
         RefDTO storageValue = storage.getValue(value);
         if (storageValue == null) {
-            storage.setValue(firstMatch.getClassName(), value, firstMatch.getLine());
+            storage.setValue(value, firstMatch);
             return;
         }
 
@@ -55,24 +63,28 @@ public class CheckDuplicateValues implements Annotator {
             return;
         }
         holder.newAnnotation(state.highlightSeverity.getSeverity(), "Duplicate value with " + storageValue)
-                .withFix(new GoToFileLineFix(storageValue.getClassName(), storageValue.getLine()))
+                .withFix(new GoToFileLineFix(storageValue.getClassName(), storageValue.getLine(), storageValue.getSrc()))
                 .highlightType(ProblemHighlightType.WARNING)
                 .create();
 
     }
 
     private RefDTO getFirstMatchReference(@NotNull PsiElement element) {
-        PsiJavaFile file = (PsiJavaFile) element.getContainingFile();
+        PsiFile file = element.getContainingFile();
         int line = file.getFileDocument().getLineNumber(element.getTextRange().getStartOffset()) + 1;
-
-        return new RefDTO(String.format("%s.%s", file.getPackageName(), file.getName().split("\\.")[0]), line);
+        return new RefDTO(file.getName(), line, file.getVirtualFile().getPath());
     }
 
     static class RefDTO {
+        private String src;
         private final String className;
         private final int line;
 
         public RefDTO(String className, int line) {
+            this(className, line, null);
+        }
+        public RefDTO(String className, int line, @Nullable String src) {
+            this.src = src;
             this.className = className;
             this.line = line;
         }
@@ -83,6 +95,10 @@ public class CheckDuplicateValues implements Annotator {
 
         public int getLine() {
             return line;
+        }
+
+        public String getSrc() {
+            return src;
         }
 
         @Override
@@ -100,68 +116,75 @@ public class CheckDuplicateValues implements Annotator {
     }
 
     static class Storage {
-        private static final Map<String, Map<String, Integer>> projectValueMap = new HashMap<>();
-        private final Map<String, Map<String, Integer>> classValueMap = new HashMap<>();
+        private static final Map<String, Map<String, RefDTO>> projectValueMap = new HashMap<>();
+        private static final Map<String, String> projectValueToFile = new HashMap<>();
+        private final Map<String, Map<String, RefDTO>> classValueMap = new HashMap<>();
         private boolean isResetValue = false;
 
-        static Storage getInstance() {
-            return new Storage();
+        private HighlightScopeEnum highlightScope;
+        static Storage getInstance(HighlightScopeEnum highlightScope) {
+            return new Storage(highlightScope);
+        }
+
+        private Storage(HighlightScopeEnum highlightScope) {
+            this.highlightScope = highlightScope;
         }
 
         RefDTO getValue(String key) {
-            if (key == null) {
+            if (key == null || !projectValueToFile.containsKey(key)) {
                 return null;
             }
-            AppSettings.State state = AppSettings.getInstance().getState();
-            if (state == null || state.highlightScope == HighlightScopeEnum.PROJECT) {
-                for (String fileName: projectValueMap.keySet()) {
-                    if (projectValueMap.get(fileName).containsKey(key)) {
-                        return new RefDTO(fileName, projectValueMap.get(fileName).get(key));
-                    }
+
+            String src = projectValueToFile.get(key);
+
+            if (highlightScope == HighlightScopeEnum.PROJECT) {
+                if (!projectValueMap.containsKey(src)) {
+                    return null;
+                }
+                if (projectValueMap.get(src).containsKey(key)) {
+                    return projectValueMap.get(src).get(key);
                 }
 
                 return null;
             }
 
-            for (String fileName: classValueMap.keySet()) {
-                if (classValueMap.get(fileName).containsKey(key)) {
-                    return new RefDTO(fileName, classValueMap.get(fileName).get(key));
-                }
+            if (!classValueMap.containsKey(src)) {
+                return null;
             }
+            if (classValueMap.get(src).containsKey(key)) {
+                return classValueMap.get(src).get(key);
+            }
+
             return null;
         }
 
-        void setValue(String fileName, String key, int line) {
+        void setValue(String key, RefDTO dto) {
             if (key == null) {
                 return;
             }
 
-            AppSettings.State state = AppSettings.getInstance().getState();
-            if (state == null || state.highlightScope == HighlightScopeEnum.PROJECT) {
-                if (!projectValueMap.containsKey(fileName)) {
-                    projectValueMap.put(fileName, new HashMap<>());
+            projectValueToFile.put(key, dto.getSrc());
+            if (highlightScope == HighlightScopeEnum.PROJECT) {
+                if (!projectValueMap.containsKey(dto.getSrc())) {
+                    projectValueMap.put(dto.getSrc(), new HashMap<>());
                 }
-                projectValueMap.get(fileName).put(key, line);
+                projectValueMap.get(dto.getSrc()).put(key, dto);
 
                 return;
             }
 
-            if (!classValueMap.containsKey(fileName)) {
-                classValueMap.put(fileName, new HashMap<>());
+            if (!classValueMap.containsKey(dto.getSrc())) {
+                classValueMap.put(dto.getSrc(), new HashMap<>());
             }
-            classValueMap.get(fileName).put(key, line);
+            classValueMap.get(dto.getSrc()).put(key, dto);
         }
 
-        void resetValue(String fileName) {
+        void resetValue(@NotNull PsiElement element) {
             if (isResetValue) {
                 return;
             }
-
-            AppSettings.State state = AppSettings.getInstance().getState();
-            if (state == null || state.highlightScope == HighlightScopeEnum.PROJECT) {
-                projectValueMap.remove(fileName);
-                isResetValue = true;
-            }
+            projectValueMap.remove(element.getContainingFile().getVirtualFile().getPath());
+            isResetValue = true;
         }
     }
 }
