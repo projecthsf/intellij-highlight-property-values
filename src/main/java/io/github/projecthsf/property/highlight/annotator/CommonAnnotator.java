@@ -3,9 +3,6 @@ package io.github.projecthsf.property.highlight.annotator;
 import com.intellij.codeInspection.ProblemHighlightType;
 import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
-import com.intellij.openapi.roots.ProjectFileIndex;
-import com.intellij.openapi.vfs.VfsUtilCore;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiLiteralValue;
@@ -18,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CommonAnnotator implements Annotator {
+public abstract class CommonAnnotator implements Annotator {
     private final AppSettings.State state = AppSettings.getInstance().getState();
     private final Storage storage;
     private boolean isResetValue = false;
@@ -74,6 +71,8 @@ public class CommonAnnotator implements Annotator {
         int line = file.getFileDocument().getLineNumber(element.getTextRange().getStartOffset()) + 1;
         return new RefDTO(file.getName(), line, file.getVirtualFile().getPath());
     }
+
+    protected abstract String getLiteralValue(@NotNull PsiElement element);
 
     static class RefDTO {
         private String src;
