@@ -41,7 +41,7 @@
   </change-notes>
 
   <extensions defaultExtensionNs="com.intellij">
-    <annotator language="JAVA" implementationClass="io.github.projecthsf.property.highlight.annotator.CheckDuplicateValues"/>
+    <annotator language="JAVA" implementationClass="io.github.projecthsf.property.highlight.annotator.JavaAnnotator"/>
     <applicationConfigurable parentId="tools" instance="io.github.projecthsf.property.highlight.settings.AppSettingsConfigurable"
                              id="io.github.projecthsf.property.highlight.settings.AppSettingsConfigurable" displayName="Duplicate Property Values" />
     <applicationService serviceImplementation="io.github.projecthsf.property.highlight.settings.AppSettings"/>
