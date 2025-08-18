@@ -44,6 +44,6 @@ public class GoToFileLineFix implements ModCommandAction {
         Document document = psiFile.getFileDocument();
         int startOffer = document.getLineStartOffset(line - 1);
         int endOffset = document.getLineEndOffset(line - 1);
-        return new ModNavigate(virtualFile, startOffer, endOffset , 0);
+        return new ModNavigate(virtualFile, startOffer, endOffset , startOffer);
     }
 }
