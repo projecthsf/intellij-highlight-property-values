@@ -27,7 +27,7 @@
   <change-notes>
     <![CDATA[
       <ul>
-        <li><b>1.1.0 (In-Progress)</b>
+        <li><b>1.1.0</b>
           <ul>
             <li>Remove depend on java language to support multi products</li>
             <li>Add function go to duplicate value</li>
@@ -42,6 +42,10 @@
 
   <extensions defaultExtensionNs="com.intellij">
     <annotator language="JAVA" implementationClass="io.github.projecthsf.property.highlight.annotator.JavaAnnotator"/>
+    <annotator language="Python" implementationClass="io.github.projecthsf.property.highlight.annotator.PythonAnnotator"/>
+    <annotator language="go" implementationClass="io.github.projecthsf.property.highlight.annotator.GoAnnotator"/>
+    <annotator language="PHP" implementationClass="io.github.projecthsf.property.highlight.annotator.PhpAnnotator"/>
+    <annotator language="JavaScript" implementationClass="io.github.projecthsf.property.highlight.annotator.JavaScriptAnnotator"/>
     <applicationConfigurable parentId="tools" instance="io.github.projecthsf.property.highlight.settings.AppSettingsConfigurable"
                              id="io.github.projecthsf.property.highlight.settings.AppSettingsConfigurable" displayName="Duplicate Property Values" />
     <applicationService serviceImplementation="io.github.projecthsf.property.highlight.settings.AppSettings"/>
