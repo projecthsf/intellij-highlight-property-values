@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "io.github.projecthsf.property.highlight"
-version = "1.1.0"
+version = "1.1.1"
 
 repositories {
   mavenCentral()
@@ -20,9 +20,12 @@ dependencies {
   intellijPlatform {
     intellijIdeaCommunity("2024.2.6")
     //phpstorm("2024.2.6")
+    //goland("2024.1.1")
+    //pycharmCommunity("2024.2.6")
     //datagrip("2025.1.3")
     //bundledPlugin("com.intellij.database")
     //bundledPlugin("com.intellij.java")
+    //bundledPlugin("org.jetbrains.plugins.go")
   }
 }
 
