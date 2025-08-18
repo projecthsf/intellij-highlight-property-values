@@ -12,11 +12,11 @@ import com.intellij.ui.components.JBRadioButton;
 import com.intellij.util.ui.FormBuilder;
 import io.github.projecthsf.property.highlight.enums.HighlightScopeEnum;
 import io.github.projecthsf.property.highlight.enums.HighlightSeverityEnum;
+import io.github.projecthsf.property.highlight.enums.LanguageEnum;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /*
  * Supports storing the application settings in a persistent way.
@@ -35,6 +35,13 @@ public final class AppSettings implements PersistentStateComponent<AppSettings.S
         public boolean checkDuplicateValueStatus = true;
         public HighlightSeverityEnum highlightSeverity = HighlightSeverityEnum.WARNING;
         public HighlightScopeEnum highlightScope = HighlightScopeEnum.PROJECT;
+        public Map<LanguageEnum, Boolean> supportedLanguages = new HashMap<>();
+
+        public State() {
+            for (LanguageEnum language: LanguageEnum.values()) {
+                supportedLanguages.put(language, true);
+            }
+        }
     }
 
     private State myState = new State();
@@ -63,6 +70,7 @@ public final class AppSettings implements PersistentStateComponent<AppSettings.S
         private final JBCheckBox checkDuplicateValueStatus = new JBCheckBox("Highlight duplicate property values", true);
         Map<HighlightSeverityEnum, JBRadioButton> highlightSeverities = new HashMap<>();
         Map<HighlightScopeEnum, JBRadioButton> highlightScopes = new HashMap<>();
+        Map<LanguageEnum, JBCheckBox> languages = new HashMap<>();
 
         public AppSettingsUi() {
             ButtonGroup highlightTypes = new ButtonGroup();
@@ -90,6 +98,13 @@ public final class AppSettings implements PersistentStateComponent<AppSettings.S
             builder.addComponent(new JBLabel("Highlight severity:"), 2);
             for (HighlightSeverityEnum highlightSeverity : HighlightSeverityEnum.values()) {
                 builder.addLabeledComponent("    ", highlightSeverities.get(highlightSeverity));
+            }
+
+            builder.addComponent(new JBLabel("Supported languages"), 3);
+            for (LanguageEnum languageEnum : LanguageEnum.values()) {
+                JBCheckBox checkBox = new JBCheckBox(languageEnum.name(), true);
+                languages.put(languageEnum, checkBox);
+                builder.addLabeledComponent("    ", checkBox);
             }
 
             builder.addComponentFillVertically(new JPanel(), 3);
@@ -138,6 +153,10 @@ public final class AppSettings implements PersistentStateComponent<AppSettings.S
 
         public void setHighlightScope(HighlightScopeEnum highlightScope) {
             highlightScopes.get(highlightScope).setSelected(true);
+        }
+
+        public Map<LanguageEnum, JBCheckBox> getLanguages() {
+            return languages;
         }
     }
 }
