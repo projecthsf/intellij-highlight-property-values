@@ -1,6 +1,7 @@
 package io.github.projecthsf.property.highlight.settings;
 
 import com.intellij.openapi.options.Configurable;
+import io.github.projecthsf.property.highlight.enums.LanguageEnum;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,6 +36,11 @@ final class AppSettingsConfigurable implements Configurable {
     @Override
     public boolean isModified() {
         AppSettings.State state = Objects.requireNonNull(AppSettings.getInstance().getState());
+        for (LanguageEnum language: LanguageEnum.values()) {
+            if (mySettingsComponent.getLanguages().get(language).isSelected() != state.supportedLanguages.get(language)) {
+                return true;
+            }
+        }
         return mySettingsComponent.getCheckDuplicateValueStatus() != state.checkDuplicateValueStatus ||
                 mySettingsComponent.getHighlightScope() != state.highlightScope ||
                 mySettingsComponent.getHighlightSeverity() != state.highlightSeverity;
@@ -46,6 +52,10 @@ final class AppSettingsConfigurable implements Configurable {
         state.checkDuplicateValueStatus = mySettingsComponent.getCheckDuplicateValueStatus();
         state.highlightScope = mySettingsComponent.getHighlightScope();
         state.highlightSeverity = mySettingsComponent.getHighlightSeverity();
+
+        for (LanguageEnum language: LanguageEnum.values()) {
+            state.supportedLanguages.put(language, mySettingsComponent.getLanguages().get(language).isSelected());
+        }
     }
 
     @Override
@@ -54,6 +64,10 @@ final class AppSettingsConfigurable implements Configurable {
         mySettingsComponent.setCheckDuplicateValueStatus(state.checkDuplicateValueStatus);
         mySettingsComponent.setHighlightScope(state.highlightScope);
         mySettingsComponent.setHighlightSeverity(state.highlightSeverity);
+
+        for (LanguageEnum language: LanguageEnum.values()) {
+            mySettingsComponent.getLanguages().get(language).setSelected(state.supportedLanguages.get(language));
+        }
     }
 
     @Override
