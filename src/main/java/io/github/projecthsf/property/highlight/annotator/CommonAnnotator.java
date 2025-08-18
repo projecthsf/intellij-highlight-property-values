@@ -3,10 +3,14 @@ package io.github.projecthsf.property.highlight.annotator;
 import com.intellij.codeInspection.ProblemHighlightType;
 import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
+import com.intellij.openapi.fileTypes.PlainTextFileType;
+import com.intellij.openapi.fileTypes.PlainTextLanguage;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiLanguageInjectionHost;
 import com.intellij.psi.PsiLiteralValue;
 import io.github.projecthsf.property.highlight.enums.HighlightScopeEnum;
+import io.github.projecthsf.property.highlight.enums.LanguageEnum;
 import io.github.projecthsf.property.highlight.quickFix.GoToFileLineFix;
 import io.github.projecthsf.property.highlight.settings.AppSettings;
 import org.jetbrains.annotations.NotNull;
@@ -33,8 +37,6 @@ public abstract class CommonAnnotator implements Annotator {
             storage.resetValue(element);
             isResetValue = true;
         }
-
-
 
         String value = getLiteralValue(element);
         if (value == null) {
@@ -64,7 +66,35 @@ public abstract class CommonAnnotator implements Annotator {
         return new RefDTO(file.getName(), line, file.getVirtualFile().getPath());
     }
 
-    protected abstract String getLiteralValue(@NotNull PsiElement element);
+    private String getLiteralValue(@NotNull PsiElement element) {
+        if (element instanceof PsiLiteralValue literalExpression) {
+            return getLiteralValue(literalExpression);
+        }
+
+        if (element instanceof PsiLanguageInjectionHost literalExpression) {
+            return getLiteralValue(literalExpression);
+        }
+
+        return null;
+    }
+
+    private String getLiteralValue(@NotNull PsiLiteralValue literalExpression) {
+        if (literalExpression.getValue() == null) {
+            return null;
+        }
+
+        if (literalExpression.getValue() instanceof Boolean) {
+            return null;
+        }
+
+        return literalExpression.getValue() instanceof String ? (String) literalExpression.getValue() : null;
+    }
+
+    private String getLiteralValue(@NotNull PsiLanguageInjectionHost literalExpression) {
+        return literalExpression.getText();
+    }
+
+    abstract protected LanguageEnum getLanguageEnum();
 
     static class RefDTO {
         private String src;
