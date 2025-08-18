@@ -30,7 +30,7 @@ public abstract class CommonAnnotator implements Annotator {
 
     @Override
     public void annotate(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
-        if (state == null || !state.checkDuplicateValueStatus) {
+        if (state == null || !state.checkDuplicateValueStatus || !state.supportedLanguages.get(getLanguageEnum())) {
             return;
         }
         if (!isResetValue) {
